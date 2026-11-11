@@ -1,10 +1,162 @@
-import { APP_VERSION } from "./version";
+import { useEffect, useMemo, useState } from "react";
+import { hueForNewGroup, nextHue } from "../lib/colour";
+import { newId } from "../lib/id";
+import { moveItem } from "../lib/order";
+import { countByFilter } from "../lib/sort";
+import type { Filter, Kind, State } from "../lib/types";
+import { visibleRows } from "../lib/visible";
+import { loadState, saveState } from "../store/storage";
+import { GroupChip } from "../ui/GroupChip";
+import { InputBar } from "../ui/InputBar";
+import { List } from "../ui/List";
+import { Menu } from "../ui/Menu";
+import { Segmented } from "../ui/Segmented";
+import { XIcon } from "../ui/icons";
 
-/** Placeholder shell; the real screen arrives in step 3. */
+const KIND_KEY = "offlister.kind";
+
+function initialKind(): Kind {
+  try {
+    return sessionStorage.getItem(KIND_KEY) === "buy" ? "buy" : "todo";
+  } catch {
+    return "todo";
+  }
+}
+
 export function App() {
+  const [state, setState] = useState<State>(loadState);
+  const [kind, setKind] = useState<Kind>(initialKind);
+  const [filter, setFilter] = useState<Filter>("all");
+  const [groupMode, setGroupMode] = useState(false);
+  const [selectedGroupId, setSelectedGroupId] = useState<string>();
+
+  useEffect(() => { saveState(state); }, [state]);
+  useEffect(() => {
+    try { sessionStorage.setItem(KIND_KEY, kind); } catch { /* ignore */ }
+  }, [kind]);
+
+  const kindItems = useMemo(() => state.items.filter((i) => i.kind === kind), [state.items, kind]);
+  const counts = countByFilter(kindItems);
+  const rows = useMemo(
+    () => visibleRows(state.items, state.groups, kind, filter, state.sort),
+    [state.items, state.groups, kind, filter, state.sort],
+  );
+  const kindGroups = state.groups.filter((g) => g.kind === kind);
+  const selectedGroup = kindGroups.find((g) => g.id === selectedGroupId);
+
+  const update = (f: (s: State) => State) => setState(f);
+
+  function switchKind(k: Kind) {
+    setKind(k);
+    setSelectedGroupId(undefined);
+  }
+
+  function add(text: string) {
+    const now = Date.now();
+    if (groupMode) {
+      const id = newId();
+      update((s) => ({
+        ...s,
+        groups: [...s.groups, { id, name: text, kind, hue: hueForNewGroup(s.groups, kind), createdAt: now }],
+      }));
+      setSelectedGroupId(id);
+      return;
+    }
+    // New items go to the top of the manual order.
+    update((s) => ({ ...s, items: [{ id: newId(), text, done: false, kind, createdAt: now }, ...s.items] }));
+  }
+
+  const toggle = (id: string) =>
+    update((s) => ({ ...s, items: s.items.map((i) => (i.id === id ? { ...i, done: !i.done } : i)) }));
+
+  const remove = (id: string) => update((s) => ({ ...s, items: s.items.filter((i) => i.id !== id) }));
+
+  function tapItem(id: string) {
+    if (!groupMode || !selectedGroup) return;
+    const gid = selectedGroup.id;
+    update((s) => ({
+      ...s,
+      items: s.items.map((i) => {
+        if (i.id !== id) return i;
+        if (i.groupId === gid) {
+          const { groupId: _g, ...rest } = i;
+          return rest;
+        }
+        return { ...i, groupId: gid };
+      }),
+    }));
+  }
+
+  const cycleHue = () => {
+    if (!selectedGroup) return;
+    update((s) => ({
+      ...s,
+      groups: s.groups.map((g) => (g.id === selectedGroup.id ? { ...g, hue: nextHue(g.hue) } : g)),
+    }));
+  };
+
+  const clearCompleted = () =>
+    update((s) => ({ ...s, items: s.items.filter((i) => !(i.kind === kind && i.done)) }));
+
+  const move = (visibleIds: string[], id: string, to: number) =>
+    update((s) => ({ ...s, items: moveItem(s.items, visibleIds, id, to) }));
+
+  function setGroupModeOn(on: boolean) {
+    setGroupMode(on);
+    if (on && !selectedGroup && kindGroups.length) setSelectedGroupId(kindGroups[kindGroups.length - 1].id);
+  }
+
+  const emptyText =
+    counts.all === 0
+      ? kind === "todo" ? "Nothing to do yet." : "Nothing to buy yet."
+      : filter === "done" ? "Nothing done yet." : "All done.";
+
   return (
-    <main style={{ padding: "var(--gap)", color: "var(--muted)" }}>
-      Offlister {APP_VERSION}
-    </main>
+    <div className="app">
+      <header className="top">
+        <div className="top-row">
+          <Segmented label="List" value={kind} onChange={switchKind}
+            options={[{ value: "todo", label: "To-do" }, { value: "buy", label: "To-buy" }]} />
+          <Menu sort={state.sort} onSort={(sort) => update((s) => ({ ...s, sort }))}
+            groupMode={groupMode} onGroupMode={setGroupModeOn}
+            selectedGroup={selectedGroup} onCycleHue={cycleHue}
+            doneCount={counts.done} onClearCompleted={clearCompleted} />
+        </div>
+        <Segmented label="Filter" value={filter} onChange={setFilter}
+          options={[
+            { value: "all", label: "All", count: counts.all },
+            { value: "open", label: "Not done", count: counts.open },
+            { value: "done", label: "Done", count: counts.done },
+          ]} />
+      </header>
+
+      <main className="scroll">
+        <List rows={rows} now={Date.now()} draggable={state.sort === "manual"}
+          groupMode={groupMode} selectedGroupId={selectedGroupId} emptyText={emptyText}
+          onToggle={toggle} onDelete={remove} onTapItem={tapItem}
+          onSelectGroup={setSelectedGroupId} onMove={move} />
+      </main>
+
+      <footer className="bottom">
+        {groupMode && (
+          <div className="group-bar">
+            <span className="group-bar-label">Group mode</span>
+            <div className="group-bar-chips">
+              {kindGroups.length === 0 && <span className="hint">Type a name to create a group</span>}
+              {kindGroups.map((g) => (
+                <GroupChip key={g.id} group={g} selected={g.id === selectedGroupId}
+                  onClick={() => setSelectedGroupId(g.id)} />
+              ))}
+            </div>
+            <button type="button" className="icon-btn" aria-label="Exit group mode"
+              onClick={() => setGroupMode(false)}>
+              <XIcon />
+            </button>
+          </div>
+        )}
+        <InputBar placeholder={groupMode ? "New group" : kind === "todo" ? "Add a to-do" : "Add an item to buy"}
+          onSubmit={add} />
+      </footer>
+    </div>
   );
 }
