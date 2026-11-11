@@ -1,0 +1,21 @@
+:root {
+  --bg: #1a1f2b;
+  --surface: #232a39;
+  --surface-2: #2a3242;
+  --border: #343d50;
+  --text: #e6eaf2;
+  --text-2: #b4bcca;
+  --muted: #9aa3b5;
+  --faint: #6b7488;
+  --accent: #3d9bff;
+  --on-accent: #0b1a2e;
+  --danger: #ff8a90;
+  --danger-bg: #2a2430;
+
+  --radius-row: 14px;
+  --radius-menu: 20px;
+  --radius-pill: 999px;
+  --gap: 16px;
+  --touch: 48px;
+  --font: "Inter Variable", system-ui, sans-serif;
+}
