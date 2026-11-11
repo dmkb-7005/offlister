@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { hueForNewGroup, nextHue } from "../lib/colour";
 import { newId } from "../lib/id";
+import { deleteGroup } from "../lib/groups";
 import { moveItem } from "../lib/order";
 import { countByFilter } from "../lib/sort";
 import type { Filter, Kind, State } from "../lib/types";
@@ -88,13 +89,13 @@ export function App() {
     }));
   }
 
-  const cycleHue = () => {
-    if (!selectedGroup) return;
-    update((s) => ({
-      ...s,
-      groups: s.groups.map((g) => (g.id === selectedGroup.id ? { ...g, hue: nextHue(g.hue) } : g)),
-    }));
-  };
+  const cycleHue = (id: string) =>
+    update((s) => ({ ...s, groups: s.groups.map((g) => (g.id === id ? { ...g, hue: nextHue(g.hue) } : g)) }));
+
+  function removeGroup(id: string) {
+    update((s) => deleteGroup(s, id));
+    if (id === selectedGroupId) setSelectedGroupId(undefined);
+  }
 
   const clearCompleted = () =>
     update((s) => ({ ...s, items: s.items.filter((i) => !(i.kind === kind && i.done)) }));
@@ -143,7 +144,8 @@ export function App() {
             ]} />
           <Menu sort={state.sort} onSort={(sort) => update((s) => ({ ...s, sort }))}
             groupMode={groupMode} onGroupMode={setGroupModeOn}
-            selectedGroup={selectedGroup} onCycleHue={cycleHue}
+            groups={kindGroups} selectedGroupId={selectedGroupId} onSelectGroup={setSelectedGroupId}
+            onCycleHue={cycleHue} onDeleteGroup={removeGroup}
             doneCount={counts.done} onClearCompleted={clearCompleted} />
         </div>
       </header>

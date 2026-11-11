@@ -146,3 +146,21 @@
   background: var(--surface-2); font-weight: 600; cursor: pointer;
 }
 .btn-primary { background: var(--accent); color: var(--on-accent); }
+
+/* group list in menu */
+.menu-group { display: flex; align-items: center; gap: 4px; border-radius: var(--radius-pill); padding-left: 6px; }
+.menu-group.selected { background: var(--border); }
+.hue-dot {
+  width: 36px; height: 36px; flex: none; border: 0; border-radius: 50%; cursor: pointer;
+  background-clip: content-box !important; padding: 6px;
+}
+.menu-group-name {
+  flex: 1; min-width: 0; min-height: 44px; border: 0; background: transparent; text-align: left;
+  font-weight: 500; padding: 0 6px; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.menu-group.selected .menu-group-name { font-weight: 600; }
+.menu-group-del {
+  width: 44px; height: 44px; flex: none; border: 0; border-radius: 50%; background: transparent;
+  color: var(--muted); display: grid; place-items: center; cursor: pointer;
+}
+.menu-group-del:active { background: var(--danger-bg); color: var(--danger); }

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { groupColours } from "../lib/colour";
 import type { Group, Sort } from "../lib/types";
-import { MoreIcon } from "./icons";
+import { MoreIcon, XIcon } from "./icons";
 
 const SORT_LABELS: Record<Sort, string> = {
   manual: "Manual",
@@ -15,8 +15,11 @@ export function Menu(props: {
   onSort: (s: Sort) => void;
   groupMode: boolean;
   onGroupMode: (on: boolean) => void;
-  selectedGroup?: Group;
-  onCycleHue: () => void;
+  groups: Group[];
+  selectedGroupId?: string;
+  onSelectGroup: (id: string) => void;
+  onCycleHue: (id: string) => void;
+  onDeleteGroup: (id: string) => void;
   doneCount: number;
   onClearCompleted: () => void;
 }) {
@@ -59,11 +62,26 @@ export function Menu(props: {
             className="menu-item" onClick={act(() => props.onGroupMode(!props.groupMode))}>
             Group mode
           </button>
-          {props.groupMode && props.selectedGroup && (
-            <button type="button" className="menu-item" onClick={props.onCycleHue}>
-              <span className="hue-pill" style={{ background: groupColours(props.selectedGroup.hue).chip }} />
-              {props.selectedGroup.name} colour
-            </button>
+          {props.groupMode && (
+            <>
+              <div className="menu-label">
+                {props.groups.length ? "Pick a group, then tap items" : "Type a name and tap + to create a group"}
+              </div>
+              {props.groups.map((g) => (
+                <div key={g.id} className={`menu-group${g.id === props.selectedGroupId ? " selected" : ""}`}>
+                  <button type="button" className="hue-dot" aria-label={`Change colour of ${g.name}`}
+                    style={{ background: groupColours(g.hue).chip }} onClick={() => props.onCycleHue(g.id)} />
+                  <button type="button" className="menu-group-name" aria-pressed={g.id === props.selectedGroupId}
+                    onClick={act(() => props.onSelectGroup(g.id))}>
+                    {g.name}
+                  </button>
+                  <button type="button" className="menu-group-del" aria-label={`Delete group ${g.name}`}
+                    onClick={() => props.onDeleteGroup(g.id)}>
+                    <XIcon width={18} height={18} />
+                  </button>
+                </div>
+              ))}
+            </>
           )}
           <div className="menu-sep" />
           <button type="button" className="menu-item danger" disabled={props.doneCount === 0}
