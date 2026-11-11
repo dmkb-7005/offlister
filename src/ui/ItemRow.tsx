@@ -87,6 +87,12 @@ export function ItemRow(props: {
           color: c?.text,
         }}
         onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={cancel}>
+        {props.draggable && (
+          <button type="button" className="grip" aria-label={`Reorder “${item.text}”`}
+            onPointerDown={(e) => { e.stopPropagation(); props.onGripDown(e); }}>
+            <GripIcon />
+          </button>
+        )}
         <button type="button" className="check" role="checkbox" aria-checked={item.done}
           aria-label={item.done ? `Mark “${item.text}” not done` : `Mark “${item.text}” done`}
           onPointerDown={(e) => e.stopPropagation()}
@@ -95,15 +101,8 @@ export function ItemRow(props: {
         </button>
         <div className="row-text">
           <div className="text">{item.text}</div>
-          <div className="stamp tabular">{formatTimestamp(item.createdAt, props.now)}</div>
+          <div className="stamp tabular">added {formatTimestamp(item.createdAt, props.now)}</div>
         </div>
-        {props.draggable && (
-          <button type="button" className="grip" aria-label={`Reorder “${item.text}”`}
-            onPointerDown={(e) => { e.stopPropagation(); props.onGripDown(e); }}
->
-            <GripIcon />
-          </button>
-        )}
         <button type="button" className="sr-only" onClick={props.onDelete}>Delete “{item.text}”</button>
       </div>
     </div>

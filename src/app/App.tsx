@@ -63,8 +63,8 @@ export function App() {
       setSelectedGroupId(id);
       return;
     }
-    // New items go to the top of the manual order.
-    update((s) => ({ ...s, items: [{ id: newId(), text, done: false, kind, createdAt: now }, ...s.items] }));
+    // New items go to the end of the manual order (above done items).
+    update((s) => ({ ...s, items: [...s.items, { id: newId(), text, done: false, kind, createdAt: now }] }));
   }
 
   const toggle = (id: string) =>
@@ -115,20 +115,37 @@ export function App() {
   return (
     <div className="app">
       <header className="top">
-        <div className="top-row">
-          <Segmented label="List" value={kind} onChange={switchKind}
-            options={[{ value: "todo", label: "To-do" }, { value: "buy", label: "To-buy" }]} />
+        <Segmented label="List" value={kind} onChange={switchKind} variant="primary"
+          options={[{ value: "todo", label: "To-do" }, { value: "buy", label: "To-buy" }]} />
+        <InputBar
+          placeholder={groupMode ? "New group name…" : kind === "todo" ? "Add a task…" : "Add an item…"}
+          onSubmit={add} />
+        {groupMode && (
+          <div className="group-bar">
+            <div className="group-bar-chips">
+              {kindGroups.length === 0 && <span className="hint">Type a name and tap + to create a group</span>}
+              {kindGroups.map((g) => (
+                <GroupChip key={g.id} group={g} selected={g.id === selectedGroupId}
+                  onClick={() => setSelectedGroupId(g.id)} />
+              ))}
+            </div>
+            <button type="button" className="done-grouping" onClick={() => setGroupMode(false)}>
+              <XIcon width={18} height={18} /> Done
+            </button>
+          </div>
+        )}
+        <div className="filter-row">
+          <Segmented label="Filter" value={filter} onChange={setFilter}
+            options={[
+              { value: "all", label: "All", count: counts.all },
+              { value: "open", label: "Not done", count: counts.open },
+              { value: "done", label: "Done", count: counts.done },
+            ]} />
           <Menu sort={state.sort} onSort={(sort) => update((s) => ({ ...s, sort }))}
             groupMode={groupMode} onGroupMode={setGroupModeOn}
             selectedGroup={selectedGroup} onCycleHue={cycleHue}
             doneCount={counts.done} onClearCompleted={clearCompleted} />
         </div>
-        <Segmented label="Filter" value={filter} onChange={setFilter}
-          options={[
-            { value: "all", label: "All", count: counts.all },
-            { value: "open", label: "Not done", count: counts.open },
-            { value: "done", label: "Done", count: counts.done },
-          ]} />
       </header>
 
       <main className="scroll">
@@ -138,26 +155,6 @@ export function App() {
           onSelectGroup={setSelectedGroupId} onMove={move} />
       </main>
 
-      <footer className="bottom">
-        {groupMode && (
-          <div className="group-bar">
-            <span className="group-bar-label">Group mode</span>
-            <div className="group-bar-chips">
-              {kindGroups.length === 0 && <span className="hint">Type a name to create a group</span>}
-              {kindGroups.map((g) => (
-                <GroupChip key={g.id} group={g} selected={g.id === selectedGroupId}
-                  onClick={() => setSelectedGroupId(g.id)} />
-              ))}
-            </div>
-            <button type="button" className="icon-btn" aria-label="Exit group mode"
-              onClick={() => setGroupMode(false)}>
-              <XIcon />
-            </button>
-          </div>
-        )}
-        <InputBar placeholder={groupMode ? "New group" : kind === "todo" ? "Add a to-do" : "Add an item to buy"}
-          onSubmit={add} />
-      </footer>
       <UpdateDialog />
     </div>
   );

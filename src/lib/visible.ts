@@ -6,7 +6,8 @@ export type Row =
   | { type: "item"; item: Item; group?: Group };
 
 /**
- * Visible list = items of the active kind -> filter -> sort -> group bundling.
+ * Visible list = items of the active kind -> filter -> sort -> done items to
+ * the bottom (stable) -> group bundling.
  * Each group's members are moved to the position of its first member and
  * preceded by a header row. Groups with no visible members show nothing.
  */
@@ -18,10 +19,11 @@ export function visibleRows(
   sort: Sort,
 ): Row[] {
   const groupById = new Map(groups.filter((g) => g.kind === kind).map((g) => [g.id, g]));
-  const sorted = sortItems(
+  const byOrder = sortItems(
     items.filter((i) => i.kind === kind && matchesFilter(i, filter)),
     sort,
   );
+  const sorted = [...byOrder.filter((i) => !i.done), ...byOrder.filter((i) => i.done)];
 
   const members = new Map<string, Item[]>();
   for (const item of sorted) {

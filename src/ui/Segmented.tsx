@@ -5,9 +5,10 @@ export function Segmented<T extends string>(props: {
   options: Option<T>[];
   value: T;
   onChange: (v: T) => void;
+  variant?: "primary" | "quiet";
 }) {
   return (
-    <div className="seg" role="radiogroup" aria-label={props.label}>
+    <div className={`seg seg-${props.variant ?? "quiet"}`} role="radiogroup" aria-label={props.label}>
       {props.options.map((o) => (
         <button key={o.value} type="button" role="radio" aria-checked={o.value === props.value}
           className="seg-btn" onClick={() => props.onChange(o.value)}>

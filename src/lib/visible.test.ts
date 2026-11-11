@@ -34,6 +34,11 @@ describe("visibleRows", () => {
     expect(show(visibleRows(items, [other], "todo", "all", "manual"))).toEqual(["a", "b", "c", "d"]);
   });
 
+  it("moves done items to the bottom, keeping their order", () => {
+    const xs = [item("p"), item("q", { done: true }), item("r"), item("s", { done: true })];
+    expect(show(visibleRows(xs, [], "todo", "all", "manual"))).toEqual(["p", "r", "q", "s"]);
+  });
+
   it("attaches the group to member rows", () => {
     const rows = visibleRows(items, [g], "todo", "all", "manual");
     const b = rows.find((r) => r.type === "item" && r.item.id === "b");
