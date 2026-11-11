@@ -12,6 +12,7 @@ import { List } from "../ui/List";
 import { Menu } from "../ui/Menu";
 import { Segmented } from "../ui/Segmented";
 import { XIcon } from "../ui/icons";
+import { UpdateDialog } from "./UpdateDialog";
 
 const KIND_KEY = "offlister.kind";
 
@@ -157,6 +158,7 @@ export function App() {
         <InputBar placeholder={groupMode ? "New group" : kind === "todo" ? "Add a to-do" : "Add an item to buy"}
           onSubmit={add} />
       </footer>
+      <UpdateDialog />
     </div>
   );
 }
